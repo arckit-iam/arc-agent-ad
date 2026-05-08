@@ -1,0 +1,26 @@
+imagePullSecrets:
+  - name: ghcr
+
+image:
+  repository: ghcr.io/arckit-iam/arc-agent-ad
+  tag: 0.1.0-dev
+  pullPolicy: IfNotPresent
+
+kafka:
+  bootstrapServers: redpanda-external.arckit.svc.cluster.local:9092
+  topics: arc.provisioning
+
+agent:
+  dryRun: true
+
+# Un deployment par target (1 pod par AD cible)
+targets:
+  - name: ad01
+    targetSystem: ad://AD01
+    consumerGroup: arc-agent-ad-ad01
+    replicaCount: 1
+
+  - name: ad02
+    targetSystem: ad://AD02
+    consumerGroup: arc-agent-ad-ad02
+    replicaCount: 1

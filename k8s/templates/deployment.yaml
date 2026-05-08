@@ -1,0 +1,49 @@
+{{- range .Values.targets }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arc-agent-ad-{{ .name }}
+  labels:
+    app.kubernetes.io/name: arc-agent-ad
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/instance: {{ .name }}
+spec:
+  replicas: {{ .replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: arc-agent-ad
+      app.kubernetes.io/instance: {{ .name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: arc-agent-ad
+        app.kubernetes.io/instance: {{ .name }}
+    spec:
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      containers:
+        - name: arc-agent-ad
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          env:
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: {{ $.Values.kafka.bootstrapServers | quote }}
+            - name: ARC_PROVISIONING_TOPICS
+              value: {{ $.Values.kafka.topics | quote }}
+            - name: TARGET_SYSTEM
+              value: {{ .targetSystem | quote }}
+            - name: ARC_AGENT_CONSUMER_GROUP
+              value: {{ .consumerGroup | quote }}
+            - name: ARC_AGENT_DRY_RUN
+              value: {{ $.Values.agent.dryRun | quote }}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+{{- end }}

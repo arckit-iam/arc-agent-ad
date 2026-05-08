@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: arc-agent-ad
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${ARC_AGENT_CONSUMER_GROUP:arc-agent-ad}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+arc:
+  agent:
+    target-system: ${TARGET_SYSTEM:ad://AD01}
+    topics: ${ARC_PROVISIONING_TOPICS:arc.provisioning}
+    dry-run: ${ARC_AGENT_DRY_RUN:true}
+
+logging:
+  level:
+    com.instantaccessprovider.arcagentad: INFO
