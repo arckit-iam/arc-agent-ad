@@ -7,12 +7,25 @@ image:
   tag: 0.1.0-dev
   pullPolicy: IfNotPresent
 
+ad:
+  url: "ldaps://dc01.iap.local:636"
+  baseDn: "DC=iap,DC=local"
+  bindDn: "CN=svc-arc,OU=Users,OU=Tier0,DC=iap,DC=local"
+  # bindPassword via secret K8s (AD_BIND_PASSWORD)
+  usersOu: "OU=Users,DC=iap,DC=local"
+  tier0Ou: "OU=Groups,OU=Tier0,DC=iap,DC=local"
+  tier1Ou: "OU=Groups,OU=Tier1,DC=iap,DC=local"
+  tier2Ou: "OU=Groups,OU=Tier2,DC=iap,DC=local"
+
 kafka:
   bootstrapServers: redpanda-external.arckit.svc.cluster.local:9092
-  topics: arc.provisioning
+  topics:
+    identity: arc.provisioning.identity
+    assignment: arc.provisioning.assignment
+    entitlement: arc.provisioning.entitlement
 
 agent:
-  dryRun: true
+  dryRun: false
 
 # Un deployment par target (1 pod par AD cible)
 targets:

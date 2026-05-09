@@ -6,6 +6,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.core.support.LdapContextSource;
 
 @Configuration
 @EnableConfigurationProperties(AgentProperties.class)
@@ -17,5 +19,22 @@ public class AgentConfig {
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return mapper;
+    }
+
+    @Bean
+    public LdapContextSource ldapContextSource(AgentProperties properties) {
+        AgentProperties.Ad ad = properties.ad();
+        LdapContextSource source = new LdapContextSource();
+        source.setUrl(ad.url());
+        source.setBase(ad.baseDn());
+        source.setUserDn(ad.bindDn());
+        source.setPassword(ad.bindPassword());
+        source.afterPropertiesSet();
+        return source;
+    }
+
+    @Bean
+    public LdapTemplate ldapTemplate(LdapContextSource ldapContextSource) {
+        return new LdapTemplate(ldapContextSource);
     }
 }

@@ -27,7 +27,12 @@ class ProvisioningCommandProcessorTest {
     void setUp() {
         handler = mock(ProvisioningHandlerPort.class);
         objectMapper = new AgentConfig().objectMapper();
-        AgentProperties properties = new AgentProperties("ad://AD01", "arc.provisioning", true);
+        AgentProperties properties = new AgentProperties(
+                "ad://AD01",
+                new AgentProperties.Topics("arc.provisioning.identity", "arc.provisioning.assignment", "arc.provisioning.entitlement"),
+                true,
+                null
+        );
         processor = new ProvisioningCommandProcessor(objectMapper, properties, handler);
     }
 
@@ -48,7 +53,7 @@ class ProvisioningCommandProcessorTest {
         );
         String payload = objectMapper.writeValueAsString(command);
 
-        processor.process(payload, "arc.provisioning");
+        processor.process(payload, "arc.provisioning.assignment");
 
         verify(handler, times(1)).execute(argThat(cmd ->
             cmd != null
@@ -75,7 +80,7 @@ class ProvisioningCommandProcessorTest {
         );
         String payload = objectMapper.writeValueAsString(command);
 
-        processor.process(payload, "arc.provisioning");
+        processor.process(payload, "arc.provisioning.assignment");
 
         verify(handler, never()).execute(argThat(cmd ->
             cmd != null && "job-2".equals(cmd.jobId())

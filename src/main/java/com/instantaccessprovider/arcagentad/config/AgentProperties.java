@@ -5,7 +5,20 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "arc.agent")
 public record AgentProperties(
         String targetSystem,
-        String topics,
-        boolean dryRun
+        Topics topics,
+        boolean dryRun,
+        Ad ad
 ) {
+    public record Topics(String identity, String assignment, String entitlement) {}
+
+    public record Ad(
+            String url,
+            String baseDn,
+            String bindDn,
+            String bindPassword,
+            String usersOu,
+            String tier0Ou,
+            String tier1Ou,
+            String tier2Ou
+    ) {}
 }

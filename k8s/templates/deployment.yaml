@@ -30,8 +30,31 @@ spec:
           env:
             - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
               value: {{ $.Values.kafka.bootstrapServers | quote }}
-            - name: ARC_PROVISIONING_TOPICS
-              value: {{ $.Values.kafka.topics | quote }}
+            - name: ARC_TOPICS_PROVISIONING_IDENTITY
+              value: {{ $.Values.kafka.topics.identity | quote }}
+            - name: ARC_TOPICS_PROVISIONING_ASSIGNMENT
+              value: {{ $.Values.kafka.topics.assignment | quote }}
+            - name: ARC_TOPICS_PROVISIONING_ENTITLEMENT
+              value: {{ $.Values.kafka.topics.entitlement | quote }}
+            - name: AD_URL
+              value: {{ $.Values.ad.url | quote }}
+            - name: AD_BASE_DN
+              value: {{ $.Values.ad.baseDn | quote }}
+            - name: AD_BIND_DN
+              value: {{ $.Values.ad.bindDn | quote }}
+            - name: AD_BIND_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: arc-agent-ad-secret
+                  key: AD_BIND_PASSWORD
+            - name: AD_USERS_OU
+              value: {{ $.Values.ad.usersOu | quote }}
+            - name: AD_TIER0_OU
+              value: {{ $.Values.ad.tier0Ou | quote }}
+            - name: AD_TIER1_OU
+              value: {{ $.Values.ad.tier1Ou | quote }}
+            - name: AD_TIER2_OU
+              value: {{ $.Values.ad.tier2Ou | quote }}
             - name: TARGET_SYSTEM
               value: {{ .targetSystem | quote }}
             - name: ARC_AGENT_CONSUMER_GROUP

@@ -15,7 +15,11 @@ public class ProvisioningKafkaListener {
         this.processor = processor;
     }
 
-    @KafkaListener(topics = "#{'${arc.agent.topics}'.split(',')}")
+    @KafkaListener(topics = {
+            "${arc.agent.topics.identity}",
+            "${arc.agent.topics.assignment}",
+            "${arc.agent.topics.entitlement}"
+    })
     public void onMessage(String payload, @Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {
         processor.process(payload, topic);
     }

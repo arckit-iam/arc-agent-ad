@@ -12,8 +12,20 @@ spring:
 arc:
   agent:
     target-system: ${TARGET_SYSTEM:ad://AD01}
-    topics: ${ARC_PROVISIONING_TOPICS:arc.provisioning}
     dry-run: ${ARC_AGENT_DRY_RUN:true}
+    topics:
+      identity: ${ARC_TOPICS_PROVISIONING_IDENTITY:arc.provisioning.identity}
+      assignment: ${ARC_TOPICS_PROVISIONING_ASSIGNMENT:arc.provisioning.assignment}
+      entitlement: ${ARC_TOPICS_PROVISIONING_ENTITLEMENT:arc.provisioning.entitlement}
+    ad:
+      url: ${AD_URL:ldaps://localhost:636}
+      base-dn: ${AD_BASE_DN}
+      bind-dn: ${AD_BIND_DN}
+      bind-password: ${AD_BIND_PASSWORD}
+      users-ou: ${AD_USERS_OU}
+      tier0-ou: ${AD_TIER0_OU}
+      tier1-ou: ${AD_TIER1_OU}
+      tier2-ou: ${AD_TIER2_OU}
 
 logging:
   level:
