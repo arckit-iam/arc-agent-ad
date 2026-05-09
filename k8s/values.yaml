@@ -1,3 +1,4 @@
+---
 imagePullSecrets:
   - name: ghcr
 
@@ -20,7 +21,3 @@ targets:
     consumerGroup: arc-agent-ad-ad01
     replicaCount: 1
 
-  - name: ad02
-    targetSystem: ad://AD02
-    consumerGroup: arc-agent-ad-ad02
-    replicaCount: 1
