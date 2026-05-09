@@ -4,28 +4,58 @@ on:
   workflow_call:
     inputs:
       version:
-        description: Docker image version to deploy
+        description: "Version de l'image Docker a deployer"
         required: true
         type: string
       runner_label:
-        description: Runner label for deployment jobs
+        description: "Label du runner self-hosted"
         required: false
-        default: ubuntu-latest
         type: string
+        default: "iap-k3s"
+      env_name:
+        description: "Nom de l'environnement GitHub"
+        required: false
+        type: string
+        default: "prod"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version de l'image Docker a deployer"
+        required: true
+        type: string
+      runner_label:
+        description: "Label du runner self-hosted"
+        required: false
+        type: string
+        default: "iap-k3s"
+      env_name:
+        description: "Nom de l'environnement GitHub"
+        required: false
+        type: string
+        default: "prod"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/arc-agent-ad
 
 jobs:
   deploy:
-    runs-on: ${{ inputs.runner_label }}
+    environment: ${{ inputs.env_name }}
+    runs-on: [self-hosted, arc-agent-ad]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Write kubeconfig to file
+        run: echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
+
       - name: Helm chart sanity check
         run: |
           test -f k8s/Chart.yaml
-          echo "Preparing deployment for arc-agent-ad version ${{ inputs.version }}"
+          echo "Preparing deployment for arc-agent-ad version ${{ inputs.version }} to env ${{ inputs.env_name }}"
 
-      - name: Deployment placeholder
+      - name: Apply all FluxCD manifests (k8s/flux)
+        env:
+          KUBECONFIG: ${{ github.workspace }}/kubeconfig.yaml
         run: |
-          echo "Inject your kubectl/helm deployment steps here."
-          echo "Target image: ghcr.io/${{ github.repository_owner }}/arc-agent-ad:${{ inputs.version }}"
+          kubectl apply -f k8s/flux/
