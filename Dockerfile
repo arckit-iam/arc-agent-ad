@@ -12,7 +12,7 @@ WORKDIR /opt/arc-agent-ad
 COPY --from=builder /app/target/arc-agent-ad-*.jar app.jar
 
 # Import CA cert into JVM truststore
-COPY iap-ca.pem /tmp/iap-ca.pem
+COPY truststore/iap-ca.pem /tmp/iap-ca.pem
 RUN keytool -importcert \
       -noprompt \
       -alias iap-ca \
