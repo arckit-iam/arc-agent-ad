@@ -1,0 +1,31 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Docker image version to deploy
+        required: true
+        type: string
+      runner_label:
+        description: Runner label for deployment jobs
+        required: false
+        default: ubuntu-latest
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ${{ inputs.runner_label }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Helm chart sanity check
+        run: |
+          test -f k8s/Chart.yaml
+          echo "Preparing deployment for arc-agent-ad version ${{ inputs.version }}"
+
+      - name: Deployment placeholder
+        run: |
+          echo "Inject your kubectl/helm deployment steps here."
+          echo "Target image: ghcr.io/${{ github.repository_owner }}/arc-agent-ad:${{ inputs.version }}"
