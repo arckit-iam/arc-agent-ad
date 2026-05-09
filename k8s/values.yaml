@@ -20,4 +20,3 @@ targets:
     targetSystem: ad://AD01
     consumerGroup: arc-agent-ad-ad01
     replicaCount: 1
-
