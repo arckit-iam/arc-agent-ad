@@ -1,8 +1,10 @@
 package com.instantaccessprovider.arcagentad.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record ProvisioningCommand(
         String jobId,
         String action,
