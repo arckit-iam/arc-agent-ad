@@ -30,6 +30,6 @@ agent:
 # Un deployment par target (1 pod par AD cible)
 targets:
   - name: ad01
-    targetSystem: ad://AD01
-    consumerGroup: arc-agent-ad-ad01
+    targetSystem: ad://DC01
+    consumerGroup: arc-agent-ad-dc01
     replicaCount: 1
