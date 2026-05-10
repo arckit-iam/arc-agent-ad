@@ -70,32 +70,40 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
                 .add("CN", command.identityName())
                 .build();
         Attributes attrs = new BasicAttributes(true);
-        attrs.put(new BasicAttribute("objectClass", "user"));
+        Attribute objClass = new BasicAttribute("objectClass");
+        objClass.add("top");
+        objClass.add("person");
+        objClass.add("organizationalPerson");
+        objClass.add("user");
+        attrs.put(objClass);
         attrs.put(new BasicAttribute("sAMAccountName", command.identityId()));
         attrs.put(new BasicAttribute("cn", command.identityName()));
-        if (command.attributes() != null) {
-            command.attributes().stream()
-                    .filter(a -> a.newValue() != null)
-                    .forEach(a -> attrs.put(new BasicAttribute(a.name(), a.newValue().toString())));
-        }
         ldapTemplate.bind(dn, null, attrs);
         log.info("Utilisateur cree: dn={}", dn);
+        applyAttributesSafely(dn, command);
     }
 
     private void modifyUser(ProvisioningCommand command) {
         LdapName dn = LdapNameBuilder.newInstance(properties.ad().usersOu())
                 .add("CN", command.identityName())
                 .build();
-        if (command.attributes() != null) {
-            ModificationItem[] mods = command.attributes().stream()
-                    .filter(a -> a.newValue() != null)
-                    .map(a -> new ModificationItem(
-                            DirContext.REPLACE_ATTRIBUTE,
-                            new BasicAttribute(a.name(), a.newValue().toString())))
-                    .toArray(ModificationItem[]::new);
-            ldapTemplate.modifyAttributes(dn, mods);
-            log.info("Utilisateur modifie: dn={}", dn);
-        }
+        applyAttributesSafely(dn, command);
+    }
+
+    private void applyAttributesSafely(LdapName dn, ProvisioningCommand command) {
+        if (command.attributes() == null) return;
+        command.attributes().stream()
+                .filter(a -> a.newValue() != null)
+                .forEach(a -> {
+                    try {
+                        ModificationItem mod = new ModificationItem(
+                                DirContext.REPLACE_ATTRIBUTE,
+                                new BasicAttribute(a.name(), a.newValue().toString()));
+                        ldapTemplate.modifyAttributes(dn, new ModificationItem[]{mod});
+                    } catch (Exception e) {
+                        log.warn("Attribut ignore (schema inconnu?): name={} dn={} error={}", a.name(), dn, e.getMessage());
+                    }
+                });
     }
 
     private void deleteUser(ProvisioningCommand command) {
