@@ -26,7 +26,6 @@ public class AgentConfig {
         AgentProperties.Ad ad = properties.ad();
         LdapContextSource source = new LdapContextSource();
         source.setUrl(ad.url());
-        source.setBase(ad.baseDn());
         source.setUserDn(ad.bindDn());
         source.setPassword(ad.bindPassword());
         source.afterPropertiesSet();
