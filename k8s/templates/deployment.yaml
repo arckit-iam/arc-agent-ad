@@ -23,6 +23,10 @@ spec:
       imagePullSecrets:
 {{ toYaml . | indent 8 }}
       {{- end }}
+      {{- with $.Values.hostAliases }}
+      hostAliases:
+{{ toYaml . | indent 8 }}
+      {{- end }}
       containers:
         - name: arc-agent-ad
           image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"

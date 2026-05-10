@@ -33,3 +33,8 @@ targets:
     targetSystem: ad://DC01
     consumerGroup: arc-agent-ad-dc01
     replicaCount: 1
+
+hostAliases:
+  - ip: "5.196.15.140"
+    hostnames:
+      - "dc01.iap.local"
