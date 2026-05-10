@@ -26,25 +26,42 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
     }
 
     @Override
-    public void execute(ProvisioningCommand command) {
+    public void execute(ProvisioningCommand command, String topic) {
         if (properties.dryRun()) {
-            log.info("[DRY-RUN] jobId={} action={} identity={} entitlement={} targetSystem={} executeAt={}",
-                    command.jobId(), command.action(), command.identityName(),
+            log.info("[DRY-RUN] jobId={} action={} topic={} identity={} entitlement={} targetSystem={} executeAt={}",
+                    command.jobId(), command.action(), topic, command.identityName(),
                     command.entitlementName(), command.targetSystem(), command.executeAt());
             return;
         }
 
-        log.info("Execution AD jobId={} action={} identity={} entitlement={}",
-                command.jobId(), command.action(), command.identityId(), command.entitlementId());
+        log.info("Execution AD jobId={} action={} topic={} identity={} entitlement={}",
+                command.jobId(), command.action(), topic, command.identityId(), command.entitlementId());
 
-        switch (command.action().toUpperCase()) {
-            case "CREATE_IDENTITY" -> createUser(command);
-            case "DELETE_IDENTITY" -> deleteUser(command);
-            case "ASSIGN"          -> addGroupMember(command);
-            case "REVOKE"          -> removeGroupMember(command);
-            case "CREATE_GROUP"    -> createGroup(command);
-            case "DELETE_GROUP"    -> deleteGroup(command);
-            default -> log.warn("Action inconnue ignoree: action={} jobId={}", command.action(), command.jobId());
+        AgentProperties.Topics topics = properties.topics();
+        String action = command.action() != null ? command.action().toUpperCase() : "";
+
+        if (topic.equals(topics.identity())) {
+            switch (action) {
+                case "CREATE" -> createUser(command);
+                case "MODIFY" -> modifyUser(command);
+                case "DELETE" -> deleteUser(command);
+                default -> log.warn("Action inconnue sur topic identity: action={} jobId={}", command.action(), command.jobId());
+            }
+        } else if (topic.equals(topics.assignment())) {
+            switch (action) {
+                case "CREATE" -> addGroupMember(command);
+                case "DELETE" -> removeGroupMember(command);
+                default -> log.warn("Action inconnue sur topic assignment: action={} jobId={}", command.action(), command.jobId());
+            }
+        } else if (topic.equals(topics.entitlement())) {
+            switch (action) {
+                case "CREATE" -> createGroup(command);
+                case "MODIFY" -> modifyGroup(command);
+                case "DELETE" -> deleteGroup(command);
+                default -> log.warn("Action inconnue sur topic entitlement: action={} jobId={}", command.action(), command.jobId());
+            }
+        } else {
+            log.warn("Topic inconnu ignore: topic={} jobId={}", topic, command.jobId());
         }
     }
 
@@ -61,6 +78,21 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
         }
         ldapTemplate.bind(dn, null, attrs);
         log.info("Utilisateur cree: dn={}", dn);
+    }
+
+    private void modifyUser(ProvisioningCommand command) {
+        LdapName dn = LdapNameBuilder.newInstance(properties.ad().usersOu())
+                .add("CN", command.identityName())
+                .build();
+        if (command.attributes() != null) {
+            ModificationItem[] mods = command.attributes().entrySet().stream()
+                    .map(e -> new ModificationItem(
+                            DirContext.REPLACE_ATTRIBUTE,
+                            new BasicAttribute(e.getKey(), e.getValue().toString())))
+                    .toArray(ModificationItem[]::new);
+            ldapTemplate.modifyAttributes(dn, mods);
+            log.info("Utilisateur modifie: dn={}", dn);
+        }
     }
 
     private void deleteUser(ProvisioningCommand command) {
@@ -123,6 +155,19 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
         attrs.put(new BasicAttribute("cn", command.entitlementName()));
         ldapTemplate.bind(dn, null, attrs);
         log.info("Groupe cree: dn={}", dn);
+    }
+
+    private void modifyGroup(ProvisioningCommand command) {
+        LdapName dn = resolveGroupDn(command);
+        if (command.attributes() != null) {
+            ModificationItem[] mods = command.attributes().entrySet().stream()
+                    .map(e -> new ModificationItem(
+                            DirContext.REPLACE_ATTRIBUTE,
+                            new BasicAttribute(e.getKey(), e.getValue().toString())))
+                    .toArray(ModificationItem[]::new);
+            ldapTemplate.modifyAttributes(dn, mods);
+            log.info("Groupe modifie: dn={}", dn);
+        }
     }
 
     private void deleteGroup(ProvisioningCommand command) {

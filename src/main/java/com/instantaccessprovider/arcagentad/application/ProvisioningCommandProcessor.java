@@ -40,7 +40,7 @@ public class ProvisioningCommandProcessor {
             return;
         }
 
-        handler.execute(command);
+        handler.execute(command, topic);
     }
 
     private ProvisioningCommand readCommand(String payload) {

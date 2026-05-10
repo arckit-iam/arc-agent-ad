@@ -60,7 +60,7 @@ class ProvisioningCommandProcessorTest {
                 && "job-1".equals(cmd.jobId())
                 && "ASSIGN".equals(cmd.action())
                 && "ad://AD01".equals(cmd.targetSystem())
-        ));
+        ), argThat(t -> "arc.provisioning.assignment".equals(t)));
     }
 
     @Test
@@ -84,6 +84,6 @@ class ProvisioningCommandProcessorTest {
 
         verify(handler, never()).execute(argThat(cmd ->
             cmd != null && "job-2".equals(cmd.jobId())
-        ));
+        ), org.mockito.ArgumentMatchers.any());
     }
 }
