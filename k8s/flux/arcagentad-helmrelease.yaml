@@ -20,7 +20,7 @@ spec:
       url: "ldaps://dc01.iap.local:636"
       baseDn: "DC=iap,DC=local"
       bindDn: "CN=svc-arc,OU=Users,OU=Tier0,DC=iap,DC=local"
-      usersOu: "OU=Users,DC=iap,DC=local"
+      usersOu: "OU=Users,OU=Tier1,DC=iap,DC=local"
       tier0Ou: "OU=Groups,OU=Tier0,DC=iap,DC=local"
       tier1Ou: "OU=Groups,OU=Tier1,DC=iap,DC=local"
       tier2Ou: "OU=Groups,OU=Tier2,DC=iap,DC=local"
