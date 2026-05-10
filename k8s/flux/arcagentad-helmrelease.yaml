@@ -15,7 +15,7 @@ spec:
         namespace: flux-system
   values:
     image:
-      tag: "0.1.5-dev"
+      tag: "0.1.6-dev"
     ad:
       url: "ldaps://dc01.iap.local:636"
       baseDn: "DC=iap,DC=local"
