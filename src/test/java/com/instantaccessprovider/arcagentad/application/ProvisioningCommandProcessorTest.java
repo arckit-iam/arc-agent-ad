@@ -9,7 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
-import java.util.Map;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -47,9 +47,12 @@ class ProvisioningCommandProcessorTest {
                 "ent-1",
                 "GRP-FIN",
                 "EMEA",
-                Map.of("ou", "Finance"),
+                List.of(new ProvisioningCommand.ChangedAttribute("ou", null, "Finance")),
                 OffsetDateTime.parse("2026-06-01T08:00:00+02:00"),
-                "corr-1"
+                "corr-1",
+                null,
+                null,
+                null
         );
         String payload = objectMapper.writeValueAsString(command);
 
@@ -74,9 +77,12 @@ class ProvisioningCommandProcessorTest {
                 "ent-1",
                 "GRP-FIN",
                 "EMEA",
-                Map.of(),
+                List.of(),
                 OffsetDateTime.parse("2026-06-01T08:00:00+02:00"),
-                "corr-2"
+                "corr-2",
+                null,
+                null,
+                null
         );
         String payload = objectMapper.writeValueAsString(command);
 

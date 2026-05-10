@@ -28,14 +28,14 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
     @Override
     public void execute(ProvisioningCommand command, String topic) {
         if (properties.dryRun()) {
-            log.info("[DRY-RUN] jobId={} action={} topic={} identity={} entitlement={} targetSystem={} executeAt={}",
+            log.info("[DRY-RUN] jobId={} action={} topic={} identity={} targetSystem={} executeAt={}",
                     command.jobId(), command.action(), topic, command.identityName(),
-                    command.entitlementName(), command.targetSystem(), command.executeAt());
+                    command.targetSystem(), command.executeAt());
             return;
         }
 
-        log.info("Execution AD jobId={} action={} topic={} identity={} entitlement={}",
-                command.jobId(), command.action(), topic, command.identityId(), command.entitlementId());
+        log.info("Execution AD jobId={} action={} topic={} identity={}",
+                command.jobId(), command.action(), topic, command.identityId());
 
         AgentProperties.Topics topics = properties.topics();
         String action = command.action() != null ? command.action().toUpperCase() : "";
@@ -74,7 +74,9 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
         attrs.put(new BasicAttribute("sAMAccountName", command.identityId()));
         attrs.put(new BasicAttribute("cn", command.identityName()));
         if (command.attributes() != null) {
-            command.attributes().forEach((k, v) -> attrs.put(new BasicAttribute(k, v.toString())));
+            command.attributes().stream()
+                    .filter(a -> a.newValue() != null)
+                    .forEach(a -> attrs.put(new BasicAttribute(a.name(), a.newValue().toString())));
         }
         ldapTemplate.bind(dn, null, attrs);
         log.info("Utilisateur cree: dn={}", dn);
@@ -85,10 +87,11 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
                 .add("CN", command.identityName())
                 .build();
         if (command.attributes() != null) {
-            ModificationItem[] mods = command.attributes().entrySet().stream()
-                    .map(e -> new ModificationItem(
+            ModificationItem[] mods = command.attributes().stream()
+                    .filter(a -> a.newValue() != null)
+                    .map(a -> new ModificationItem(
                             DirContext.REPLACE_ATTRIBUTE,
-                            new BasicAttribute(e.getKey(), e.getValue().toString())))
+                            new BasicAttribute(a.name(), a.newValue().toString())))
                     .toArray(ModificationItem[]::new);
             ldapTemplate.modifyAttributes(dn, mods);
             log.info("Utilisateur modifie: dn={}", dn);
@@ -104,7 +107,13 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
     }
 
     private LdapName resolveGroupDn(ProvisioningCommand command) {
-        String tierOu = switch (command.scope() != null ? command.scope().toUpperCase() : "") {
+        return LdapNameBuilder.newInstance(resolveGroupOu(command))
+                .add("CN", command.entitlementId())
+                .build();
+    }
+
+    private String resolveGroupOu(ProvisioningCommand command) {
+        return switch (command.scope() != null ? command.scope().toUpperCase() : "") {
             case "TIER0" -> properties.ad().tier0Ou();
             case "TIER1" -> properties.ad().tier1Ou();
             case "TIER2" -> properties.ad().tier2Ou();
@@ -113,16 +122,11 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
                 yield properties.ad().tier2Ou();
             }
         };
-        return LdapNameBuilder.newInstance(tierOu)
-                .add("CN", command.entitlementId())
-                .build();
     }
 
     private void addGroupMember(ProvisioningCommand command) {
-        LdapName groupDn = resolveGroupDn(command);
-        LdapName userDn = LdapNameBuilder.newInstance(properties.ad().usersOu())
-                .add("CN", command.identityName())
-                .build();
+        LdapName groupDn = resolveGroupDnFromAssignment(command);
+        LdapName userDn = resolveUserDnFromAssignment(command);
         ModificationItem mod = new ModificationItem(
                 DirContext.ADD_ATTRIBUTE,
                 new BasicAttribute("member", userDn.toString())
@@ -132,16 +136,24 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
     }
 
     private void removeGroupMember(ProvisioningCommand command) {
-        LdapName groupDn = resolveGroupDn(command);
-        LdapName userDn = LdapNameBuilder.newInstance(properties.ad().usersOu())
-                .add("CN", command.identityName())
-                .build();
+        LdapName groupDn = resolveGroupDnFromAssignment(command);
+        LdapName userDn = resolveUserDnFromAssignment(command);
         ModificationItem mod = new ModificationItem(
                 DirContext.REMOVE_ATTRIBUTE,
                 new BasicAttribute("member", userDn.toString())
         );
         ldapTemplate.modifyAttributes(groupDn, new ModificationItem[]{mod});
         log.info("Membre retire: user={} group={}", userDn, groupDn);
+    }
+
+    private LdapName resolveUserDnFromAssignment(ProvisioningCommand command) {
+        String cn = command.identity() != null ? command.identity().displayName() : command.identityName();
+        return LdapNameBuilder.newInstance(properties.ad().usersOu()).add("CN", cn).build();
+    }
+
+    private LdapName resolveGroupDnFromAssignment(ProvisioningCommand command) {
+        String cn = command.entitlement() != null ? command.entitlement().displayName() : command.entitlementName();
+        return LdapNameBuilder.newInstance(resolveGroupOu(command)).add("CN", cn).build();
     }
 
     private void createGroup(ProvisioningCommand command) {
@@ -160,10 +172,11 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
     private void modifyGroup(ProvisioningCommand command) {
         LdapName dn = resolveGroupDn(command);
         if (command.attributes() != null) {
-            ModificationItem[] mods = command.attributes().entrySet().stream()
-                    .map(e -> new ModificationItem(
+            ModificationItem[] mods = command.attributes().stream()
+                    .filter(a -> a.newValue() != null)
+                    .map(a -> new ModificationItem(
                             DirContext.REPLACE_ATTRIBUTE,
-                            new BasicAttribute(e.getKey(), e.getValue().toString())))
+                            new BasicAttribute(a.name(), a.newValue().toString())))
                     .toArray(ModificationItem[]::new);
             ldapTemplate.modifyAttributes(dn, mods);
             log.info("Groupe modifie: dn={}", dn);
