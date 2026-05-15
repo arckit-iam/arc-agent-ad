@@ -67,7 +67,7 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
 
     private void createUser(ProvisioningCommand command) {
         LdapName dn = LdapNameBuilder.newInstance(properties.ad().usersOu())
-                .add("CN", command.identityName())
+                .add("CN", command.identityId())
                 .build();
         Attributes attrs = new BasicAttributes(true);
         Attribute objClass = new BasicAttribute("objectClass");
@@ -77,7 +77,10 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
         objClass.add("user");
         attrs.put(objClass);
         attrs.put(new BasicAttribute("sAMAccountName", command.identityId()));
-        attrs.put(new BasicAttribute("cn", command.identityName()));
+        attrs.put(new BasicAttribute("cn", command.identityId()));
+        if (command.identityName() != null && !command.identityName().isBlank()) {
+            attrs.put(new BasicAttribute("displayName", command.identityName()));
+        }
         ldapTemplate.bind(dn, null, attrs);
         log.info("Utilisateur cree: dn={}", dn);
         applyAttributesSafely(dn, command);
@@ -85,30 +88,42 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
 
     private void modifyUser(ProvisioningCommand command) {
         LdapName dn = LdapNameBuilder.newInstance(properties.ad().usersOu())
-                .add("CN", command.identityName())
+                .add("CN", command.identityId())
                 .build();
         applyAttributesSafely(dn, command);
     }
+
+    private static final java.util.Map<String, String> ATTR_MAPPING = java.util.Map.of(
+            "email", "mail",
+            "firstname", "givenName",
+            "lastname", "sn",
+            "phone", "telephoneNumber",
+            "mobile", "mobile",
+            "title", "title",
+            "department", "department",
+            "company", "company"
+    );
 
     private void applyAttributesSafely(LdapName dn, ProvisioningCommand command) {
         if (command.attributes() == null) return;
         command.attributes().stream()
                 .filter(a -> a.newValue() != null)
                 .forEach(a -> {
+                    String ldapAttr = ATTR_MAPPING.getOrDefault(a.name(), a.name());
                     try {
                         ModificationItem mod = new ModificationItem(
                                 DirContext.REPLACE_ATTRIBUTE,
-                                new BasicAttribute(a.name(), a.newValue().toString()));
+                                new BasicAttribute(ldapAttr, a.newValue().toString()));
                         ldapTemplate.modifyAttributes(dn, new ModificationItem[]{mod});
                     } catch (Exception e) {
-                        log.warn("Attribut ignore (schema inconnu?): name={} dn={} error={}", a.name(), dn, e.getMessage());
+                        log.warn("Attribut ignore (schema inconnu?): name={} ldapAttr={} dn={} error={}", a.name(), ldapAttr, dn, e.getMessage());
                     }
                 });
     }
 
     private void deleteUser(ProvisioningCommand command) {
         LdapName dn = LdapNameBuilder.newInstance(properties.ad().usersOu())
-                .add("CN", command.identityName())
+                .add("CN", command.identityId())
                 .build();
         ldapTemplate.unbind(dn);
         log.info("Utilisateur supprime: dn={}", dn);
@@ -155,12 +170,16 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
     }
 
     private LdapName resolveUserDnFromAssignment(ProvisioningCommand command) {
-        String cn = command.identity() != null ? command.identity().displayName() : command.identityName();
+        String cn = command.identity() != null
+                ? firstNonBlank(command.identity().externalId(), command.identity().name(), command.identity().displayName(), command.identityId())
+                : command.identityId();
         return LdapNameBuilder.newInstance(properties.ad().usersOu()).add("CN", cn).build();
     }
 
     private LdapName resolveGroupDnFromAssignment(ProvisioningCommand command) {
-        String cn = command.entitlement() != null ? command.entitlement().displayName() : command.entitlementName();
+        String cn = command.entitlement() != null
+                ? firstNonBlank(command.entitlement().externalId(), command.entitlement().name(), command.entitlement().displayName(), command.entitlementId())
+                : command.entitlementId();
         return LdapNameBuilder.newInstance(resolveGroupOu(command)).add("CN", cn).build();
     }
 
@@ -172,7 +191,10 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
         objClass.add("group");
         attrs.put(objClass);
         attrs.put(new BasicAttribute("sAMAccountName", command.entitlementId()));
-        attrs.put(new BasicAttribute("cn", command.entitlementName()));
+        attrs.put(new BasicAttribute("cn", command.entitlementId()));
+        if (command.entitlementName() != null && !command.entitlementName().isBlank()) {
+            attrs.put(new BasicAttribute("displayName", command.entitlementName()));
+        }
         ldapTemplate.bind(dn, null, attrs);
         log.info("Groupe cree: dn={}", dn);
     }
@@ -195,6 +217,18 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
         LdapName dn = resolveGroupDn(command);
         ldapTemplate.unbind(dn);
         log.info("Groupe supprime: dn={}", dn);
+    }
+
+    private static String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 }
 
