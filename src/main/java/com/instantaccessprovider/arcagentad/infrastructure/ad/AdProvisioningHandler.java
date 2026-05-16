@@ -129,9 +129,18 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
         log.info("Utilisateur supprime: dn={}", dn);
     }
 
+    private String resolveEntitlementId(ProvisioningCommand command) {
+        // Pour les événements entitlement plats, externalId/name sont à la racine → mappés sur identityId
+        return firstNonBlank(command.entitlementId(), command.identityId());
+    }
+
+    private String resolveEntitlementName(ProvisioningCommand command) {
+        return firstNonBlank(command.entitlementName(), command.identityName());
+    }
+
     private LdapName resolveGroupDn(ProvisioningCommand command) {
         return LdapNameBuilder.newInstance(resolveGroupOu(command))
-                .add("CN", command.entitlementId())
+                .add("CN", resolveEntitlementId(command))
                 .build();
     }
 
@@ -185,15 +194,17 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
 
     private void createGroup(ProvisioningCommand command) {
         LdapName dn = resolveGroupDn(command);
+        String id = resolveEntitlementId(command);
+        String displayName = resolveEntitlementName(command);
         Attributes attrs = new BasicAttributes(true);
         Attribute objClass = new BasicAttribute("objectClass");
         objClass.add("top");
         objClass.add("group");
         attrs.put(objClass);
-        attrs.put(new BasicAttribute("sAMAccountName", command.entitlementId()));
-        attrs.put(new BasicAttribute("cn", command.entitlementId()));
-        if (command.entitlementName() != null && !command.entitlementName().isBlank()) {
-            attrs.put(new BasicAttribute("displayName", command.entitlementName()));
+        attrs.put(new BasicAttribute("sAMAccountName", id));
+        attrs.put(new BasicAttribute("cn", id));
+        if (displayName != null && !displayName.isBlank()) {
+            attrs.put(new BasicAttribute("displayName", displayName));
         }
         ldapTemplate.bind(dn, null, attrs);
         log.info("Groupe cree: dn={}", dn);
