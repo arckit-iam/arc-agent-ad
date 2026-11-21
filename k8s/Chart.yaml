@@ -1,6 +1,0 @@
----
-apiVersion: v2
-name: arc-agent-ad
-version: 0.1.2
-description: Helm chart pour deployer un pod arc-agent-ad par targetSystem
-appVersion: "0.1.0"

@@ -10,15 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
       - name: Extract version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
-      - name: Upload config artifact
+      - name: Checkout arc-kubeorchestrator
+        uses: actions/checkout@v4
+        with:
+          repository: arckit-iam/arc-kubeorchestrator
+          token: ${{ secrets.GITOPS_TOKEN }}
+          path: arc-kubeorchestrator
+
+      - name: Upload Helm chart artifact
         uses: actions/upload-artifact@v4
         with:
           name: arc-agent-ad-config-${{ steps.version.outputs.VERSION }}-dev
-          path: k8s/
+          path: arc-kubeorchestrator/arc-agent-ad/
           retention-days: 30

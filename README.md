@@ -41,5 +41,22 @@ mvn clean package
 
 ## Deploiement Kubernetes (1 pod par target)
 
-Le chart Helm `k8s/` supporte une liste `targets`.
+Le chart Helm `arc-agent-ad` (dépôt [arc-kubeorchestrator](https://github.com/arckit-iam/arc-kubeorchestrator)) supporte une liste `targets`.
 Chaque entree genere un Deployment dedie avec son `TARGET_SYSTEM` et son `consumerGroup`.
+
+## Documentation
+
+La documentation d'architecture de la plateforme est dans le dépôt [arc-docs](https://github.com/EtiennSalle/arc-docs) :
+
+- [Architecture globale](https://github.com/EtiennSalle/arc-docs/blob/main/docs/02-architecture-globale.md).
+- [Collecte Active Directory](https://github.com/EtiennSalle/arc-docs/blob/main/docs/03-collecte-ad.md).
+
+Le déploiement (Helm, Flux, CI/CD) est documenté dans [arc-kubeorchestrator](https://github.com/arckit-iam/arc-kubeorchestrator/tree/main/docs).
+
+## Licence
+
+Copyright © 2026 Dédale Solutions
+
+Licensed under the EUPL
+
+Ce projet est distribué sous la licence [EUPL-1.2](LICENSE) (European Union Public Licence v. 1.2).
