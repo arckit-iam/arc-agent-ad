@@ -41,7 +41,7 @@ mvn clean package
 
 ## Deploiement Kubernetes (1 pod par target)
 
-Le chart Helm `arc-agent-ad` (dépôt [arc-kubeorchestrator](https://github.com/arckit-iam/arc-kubeorchestrator)) supporte une liste `targets`.
+Le chart Helm `arc-agent-ad` (dépôt GitOps privé) supporte une liste `targets`.
 Chaque entree genere un Deployment dedie avec son `TARGET_SYSTEM` et son `consumerGroup`.
 
 ## Documentation
@@ -51,7 +51,7 @@ La documentation d'architecture de la plateforme est dans le dépôt [arc-docs](
 - [Architecture globale](https://github.com/arckit-iam/arc-docs/blob/main/docs/02-architecture-globale.md).
 - [Collecte Active Directory](https://github.com/arckit-iam/arc-docs/blob/main/docs/03-collecte-ad.md).
 
-Le déploiement (Helm, Flux, CI/CD) est documenté dans [arc-kubeorchestrator](https://github.com/arckit-iam/arc-kubeorchestrator/tree/main/docs).
+Le déploiement GitOps (Helm, FluxCD) est géré dans un dépôt privé. L'intégration et la mise en production de la plateforme sont proposées par Dédale Solutions en **service payant** : pour en discuter, contactez-nous via le profil GitHub de l'organisation [arckit-iam](https://github.com/arckit-iam).
 
 ## Licence
 
