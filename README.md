@@ -27,6 +27,17 @@ Variables principales:
 - `ARC_AGENT_CONSUMER_GROUP` (ex: `arc-agent-ad-ad01`)
 - `ARC_AGENT_DRY_RUN` (`true`/`false`)
 
+### Certificats (LDAPS)
+
+L'image n'embarque aucune autorité de certification. Pour joindre un annuaire en LDAPS avec une CA privée, fournir son propre truststore JKS (monté en volume) :
+
+```bash
+docker run -v ./ca.jks:/certs/ca.jks:ro \
+  -e JAVA_OPTS="-Djavax.net.ssl.trustStore=/certs/ca.jks -Djavax.net.ssl.trustStorePassword=changeit" \
+  ghcr.io/arckit-iam/arc-agent-ad:stable
+```
+
+Le truststore doit contenir la CA de l'annuaire ; il remplace celui de la JVM, il faut donc y inclure aussi les CA publiques si l'agent en a besoin.
 ## Lancement local
 
 ```bash
