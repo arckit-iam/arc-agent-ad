@@ -46,10 +46,10 @@ Chaque entree genere un Deployment dedie avec son `TARGET_SYSTEM` et son `consum
 
 ## Documentation
 
-La documentation d'architecture de la plateforme est dans le dépôt [arc-docs](https://github.com/EtiennSalle/arc-docs) :
+La documentation d'architecture de la plateforme est dans le dépôt [arc-docs](https://github.com/arckit-iam/arc-docs) :
 
-- [Architecture globale](https://github.com/EtiennSalle/arc-docs/blob/main/docs/02-architecture-globale.md).
-- [Collecte Active Directory](https://github.com/EtiennSalle/arc-docs/blob/main/docs/03-collecte-ad.md).
+- [Architecture globale](https://github.com/arckit-iam/arc-docs/blob/main/docs/02-architecture-globale.md).
+- [Collecte Active Directory](https://github.com/arckit-iam/arc-docs/blob/main/docs/03-collecte-ad.md).
 
 Le déploiement (Helm, Flux, CI/CD) est documenté dans [arc-kubeorchestrator](https://github.com/arckit-iam/arc-kubeorchestrator/tree/main/docs).
 
