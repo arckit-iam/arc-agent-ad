@@ -22,7 +22,12 @@ arc:
       base-dn: ${AD_BASE_DN}
       bind-dn: ${AD_BIND_DN}
       bind-password: ${AD_BIND_PASSWORD}
-      users-ou: ${AD_USERS_OU}
+      users-ou: ${AD_USERS_OU:}
+      # Type de compte -> OU cible. Les managers n'envoient que le type (standard, admin...).
+      account-type-ous:
+        standard: ${AD_ACCOUNT_TYPE_STANDARD_OU:}
+        admin: ${AD_ACCOUNT_TYPE_ADMIN_OU:}
+        service-account: ${AD_ACCOUNT_TYPE_SERVICE_ACCOUNT_OU:}
       tier0-ou: ${AD_TIER0_OU}
       tier1-ou: ${AD_TIER1_OU}
       tier2-ou: ${AD_TIER2_OU}

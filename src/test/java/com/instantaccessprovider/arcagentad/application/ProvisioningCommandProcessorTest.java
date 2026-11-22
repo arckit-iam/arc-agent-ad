@@ -42,7 +42,7 @@ class ProvisioningCommandProcessorTest {
     @Test
     void shouldHandleCommandWhenTargetMatches() throws Exception {
         ProvisioningCommand command = new ProvisioningCommand(
-                "job-1",
+                "order-1",
                 "ASSIGN",
                 "id-1",
                 "jdupont",
@@ -55,6 +55,7 @@ class ProvisioningCommandProcessorTest {
                 "corr-1",
                 null,
                 null,
+                null,
                 null
         );
         String payload = objectMapper.writeValueAsString(command);
@@ -63,7 +64,7 @@ class ProvisioningCommandProcessorTest {
 
         verify(handler, times(1)).execute(argThat(cmd ->
             cmd != null
-                && "job-1".equals(cmd.jobId())
+                && "order-1".equals(cmd.orderId())
                 && "ASSIGN".equals(cmd.action())
                 && "ad://AD01".equals(cmd.targetSystem())
         ), argThat(t -> "arc.provisioning.assignment".equals(t)));
@@ -72,7 +73,7 @@ class ProvisioningCommandProcessorTest {
     @Test
     void shouldIgnoreCommandWhenTargetDoesNotMatch() throws Exception {
         ProvisioningCommand command = new ProvisioningCommand(
-                "job-2",
+                "order-2",
                 "ASSIGN",
                 "id-1",
                 "jdupont",
@@ -85,6 +86,7 @@ class ProvisioningCommandProcessorTest {
                 "corr-2",
                 null,
                 null,
+                null,
                 null
         );
         String payload = objectMapper.writeValueAsString(command);
@@ -92,7 +94,7 @@ class ProvisioningCommandProcessorTest {
         processor.process(payload, "arc.provisioning.assignment");
 
         verify(handler, never()).execute(argThat(cmd ->
-            cmd != null && "job-2".equals(cmd.jobId())
+            cmd != null && "order-2".equals(cmd.orderId())
         ), org.mockito.ArgumentMatchers.any());
     }
 }

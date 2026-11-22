@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import javax.naming.directory.*;
 import javax.naming.ldap.LdapName;
+import java.util.Map;
 
 @Component
 public class AdProvisioningHandler implements ProvisioningHandlerPort {
@@ -31,14 +32,14 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
     @Override
     public void execute(ProvisioningCommand command, String topic) {
         if (properties.dryRun()) {
-            log.info("[DRY-RUN] jobId={} action={} topic={} identity={} targetSystem={} executeAt={}",
-                    command.jobId(), command.action(), topic, command.identityName(),
+            log.info("[DRY-RUN] orderId={} action={} topic={} identity={} targetSystem={} executeAt={}",
+                    command.orderId(), command.action(), topic, command.identityName(),
                     command.targetSystem(), command.executeAt());
             return;
         }
 
-        log.info("Execution AD jobId={} action={} topic={} identity={}",
-                command.jobId(), command.action(), topic, command.identityId());
+        log.info("Execution AD orderId={} action={} topic={} identity={}",
+                command.orderId(), command.action(), topic, command.identityId());
 
         AgentProperties.Topics topics = properties.topics();
         String action = command.action() != null ? command.action().toUpperCase() : "";
@@ -48,30 +49,28 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
                 case "CREATE" -> createUser(command);
                 case "MODIFY" -> modifyUser(command);
                 case "DELETE" -> deleteUser(command);
-                default -> log.warn("Action inconnue sur topic identity: action={} jobId={}", command.action(), command.jobId());
+                default -> log.warn("Action inconnue sur topic identity: action={} orderId={}", command.action(), command.orderId());
             }
         } else if (topic.equals(topics.assignment())) {
             switch (action) {
                 case "CREATE" -> addGroupMember(command);
                 case "DELETE" -> removeGroupMember(command);
-                default -> log.warn("Action inconnue sur topic assignment: action={} jobId={}", command.action(), command.jobId());
+                default -> log.warn("Action inconnue sur topic assignment: action={} orderId={}", command.action(), command.orderId());
             }
         } else if (topic.equals(topics.entitlement())) {
             switch (action) {
                 case "CREATE" -> createGroup(command);
                 case "MODIFY" -> modifyGroup(command);
                 case "DELETE" -> deleteGroup(command);
-                default -> log.warn("Action inconnue sur topic entitlement: action={} jobId={}", command.action(), command.jobId());
+                default -> log.warn("Action inconnue sur topic entitlement: action={} orderId={}", command.action(), command.orderId());
             }
         } else {
-            log.warn("Topic inconnu ignore: topic={} jobId={}", topic, command.jobId());
+            log.warn("Topic inconnu ignore: topic={} orderId={}", topic, command.orderId());
         }
     }
 
     private void createUser(ProvisioningCommand command) {
-        LdapName dn = LdapNameBuilder.newInstance(properties.ad().usersOu())
-                .add("CN", command.identityId())
-                .build();
+        LdapName dn = userDn(command.accountType(), command.identityId());
         Attributes attrs = new BasicAttributes(true);
         Attribute objClass = new BasicAttribute("objectClass");
         objClass.add("top");
@@ -90,9 +89,7 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
     }
 
     private void modifyUser(ProvisioningCommand command) {
-        LdapName dn = LdapNameBuilder.newInstance(properties.ad().usersOu())
-                .add("CN", command.identityId())
-                .build();
+        LdapName dn = userDn(command.accountType(), command.identityId());
         applyAttributesSafely(dn, command);
     }
 
@@ -125,9 +122,7 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
     }
 
     private void deleteUser(ProvisioningCommand command) {
-        LdapName dn = LdapNameBuilder.newInstance(properties.ad().usersOu())
-                .add("CN", command.identityId())
-                .build();
+        LdapName dn = userDn(command.accountType(), command.identityId());
         ldapTemplate.unbind(dn);
         log.info("Utilisateur supprime: dn={}", dn);
     }
@@ -153,7 +148,7 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
             case "TIER1" -> properties.ad().tier1Ou();
             case "TIER2" -> properties.ad().tier2Ou();
             default -> {
-                log.warn("Scope inconnu '{}', fallback sur Tier2 pour jobId={}", command.scope(), command.jobId());
+                log.warn("Scope inconnu '{}', fallback sur Tier2 pour orderId={}", command.scope(), command.orderId());
                 yield properties.ad().tier2Ou();
             }
         };
@@ -185,7 +180,35 @@ public class AdProvisioningHandler implements ProvisioningHandlerPort {
         String cn = command.identity() != null
                 ? firstNonBlank(command.identity().externalId(), command.identity().name(), command.identity().displayName(), command.identityId())
                 : command.identityId();
-        return LdapNameBuilder.newInstance(properties.ad().usersOu()).add("CN", cn).build();
+        return userDn(command.identity() != null ? command.identity().accountType() : null, cn);
+    }
+
+    /**
+     * Construit le DN d'un compte selon son type métier : l'OU cible vient de la configuration de
+     * l'agent ({@code arc.agent.ad.account-type-ous}), jamais de l'ordre. Sans type, on retombe sur
+     * {@code users-ou} ; un type non configuré est refusé plutôt que d'être rangé au mauvais endroit.
+     */
+    LdapName userDn(String accountType, String cn) {
+        return LdapNameBuilder.newInstance(resolveUserOu(accountType)).add("CN", cn).build();
+    }
+
+    private String resolveUserOu(String accountType) {
+        if (accountType == null || accountType.isBlank()) {
+            String fallback = properties.ad().usersOu();
+            if (fallback == null || fallback.isBlank()) {
+                throw new IllegalArgumentException("Type de compte absent et aucune OU par défaut (users-ou) configurée");
+            }
+            return fallback;
+        }
+        Map<String, String> ous = properties.ad().accountTypeOus();
+        String ou = ous == null ? null : ous.entrySet().stream()
+                .filter(e -> e.getKey().equalsIgnoreCase(accountType.trim()))
+                .map(Map.Entry::getValue)
+                .findFirst().orElse(null);
+        if (ou == null || ou.isBlank()) {
+            throw new IllegalArgumentException("Type de compte inconnu de l'agent: " + accountType);
+        }
+        return ou;
     }
 
     private LdapName resolveGroupDnFromAssignment(ProvisioningCommand command) {

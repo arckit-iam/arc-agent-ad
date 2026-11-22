@@ -5,6 +5,8 @@ package com.instantaccessprovider.arcagentad.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.Map;
+
 @ConfigurationProperties(prefix = "arc.agent")
 public record AgentProperties(
         String targetSystem,
@@ -22,6 +24,7 @@ public record AgentProperties(
             String usersOu,
             String tier0Ou,
             String tier1Ou,
-            String tier2Ou
+            String tier2Ou,
+            Map<String, String> accountTypeOus
     ) {}
 }
